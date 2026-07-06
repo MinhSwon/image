@@ -14,7 +14,7 @@ def main():
             model_path="models/custom_hog_svm_face_model.pkl",
             decision_threshold=0.5, # Có thể tinh chỉnh
             window_step=16,         # Tăng bước nhảy để chạy nhanh hơn trên Realtime
-            scale_factor=1.2
+            scales=[1.0, 0.75, 0.5]
         )
     except Exception as e:
         print(f"Lỗi tải mô hình: {e}")
