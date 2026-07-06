@@ -110,23 +110,30 @@ Kết quả train/test hiện tại:
  [ 3 57]]
 ```
 
-Đánh giá toàn bộ dataset:
-
+### 4. Đánh giá mô hình Custom
+Đánh giá độ chính xác của mô hình Custom trên tập Dataset tự tải:
 ```bash
 python src/evaluate_custom_svm.py
 ```
 
-Kết quả toàn bộ dataset hiện tại:
-
-- Accuracy: `0.9933`
-- Confusion matrix:
-
-```text
-[[299   1]
- [  3 297]]
+### 5. Sáng tạo mở rộng: Nhận diện Khuôn Mặt (Face Detection)
+Để đáp ứng tiêu chí Sáng tạo (20%), dự án tích hợp thêm một mô hình nhận diện khuôn mặt tự huấn luyện bằng bộ dữ liệu LFW (Labeled Faces in the Wild).
+**Bước 1: Huấn luyện mô hình Khuôn mặt (Tự động tải LFW và lấy ảnh nền từ INRIA)**
+```bash
+python src/train_custom_svm_faces.py
+```
+**Bước 2: Chạy Real-time Face Detection**
+```bash
+python src/run_realtime_faces.py --source 0
 ```
 
-## 5. Demo bằng custom SVM
+## Cấu trúc thư mục (Docs)
+Thư mục `docs/` chứa toàn bộ tài liệu nộp báo cáo:
+- `BaoCao_HOG_SVM.docx`: Báo cáo chính thức (Gen tự động).
+- `SLIDE_CONTENT.md`: Kịch bản thuyết trình chi tiết.
+- `RUN_GUIDE.md`: Hướng dẫn chạy nhanh dành cho GV.
+
+## 6. Demo bằng custom SVM
 
 Custom SVM dùng sliding window nên chậm hơn detector pretrained. Nên dùng frame nhỏ và bước trượt lớn khi demo.
 

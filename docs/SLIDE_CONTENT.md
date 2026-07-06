@@ -1,167 +1,131 @@
-# Nội Dung Gợi Ý Slide Thuyết Trình 15-20 Phút
+# KỊCH BẢN THUYẾT TRÌNH (DỰ KIẾN 15-20 PHÚT)
+## CHỦ ĐỀ 2: IMAGE GRADIENT, HOG & SVM (PHÁT HIỆN NGƯỜI ĐI BỘ VÀ KHUÔN MẶT)
 
-## Slide 1: Tiêu đề
+---
 
-Phát hiện người đi bộ bằng Image Gradient, HOG và SVM trên Video/Webcam.
+### Slide 1: Tiêu đề & Giới thiệu (1 phút)
+**Nội dung hiển thị:**
+* Tên đề tài: Phát hiện người đi bộ và đối tượng mở rộng (Khuôn mặt) bằng Image Gradient, HOG và SVM.
+* Thành viên nhóm, Giáo viên hướng dẫn.
 
-## Slide 2: Mục tiêu đề tài
+**Lời thoại thuyết trình:**
+"Chào thầy và các bạn. Hôm nay, nhóm chúng em xin trình bày báo cáo cuối kỳ môn Nhập môn Xử lý ảnh số - Chủ đề 2. Đề tài của nhóm là phát triển một ứng dụng Thị giác máy tính truyền thống để phát hiện người đi bộ theo thời gian thực dựa trên 3 kỹ thuật cốt lõi: Image Gradient, đặc trưng HOG và bộ phân loại học máy SVM. Đặc biệt, nhóm cũng xin trình bày phần mở rộng sáng tạo: tự huấn luyện một mô hình phát hiện khuôn mặt."
 
-- Tìm hiểu Image Gradient, Magnitude, Orientation.
-- Tìm hiểu HOG descriptor.
-- Dùng SVM để phân loại person/background.
-- Xây dựng demo realtime có bounding box và nhãn.
-- Tải INRIA subset từ Hugging Face và train custom Linear SVM.
+---
 
-## Slide 3: Quy trình tổng quát
+### Slide 2: Đặt vấn đề & Mục tiêu (2 phút)
+**Nội dung hiển thị:**
+* Ứng dụng: Giám sát an ninh, xe tự hành (ADAS), phân tích hành vi.
+* Mục tiêu 1: Hiểu và hiện thực hóa cơ sở toán học của xử lý ảnh.
+* Mục tiêu 2: Demo Realtime (Webcam/Video).
+* Mục tiêu 3 (Mở rộng): Tự train mô hình Custom SVM cho đối tượng mới (Khuôn mặt).
 
-```text
-Input frame -> Grayscale -> Gradient -> HOG -> SVM -> Bounding Box -> Display/Record
-```
+**Lời thoại thuyết trình:**
+"Phát hiện đối tượng là nền tảng của nhiều công nghệ như xe tự hành hay camera an ninh. Mặc dù Deep Learning đang rất phổ biến, nhưng việc làm chủ kỹ thuật HOG + SVM là cực kỳ quan trọng vì nó giúp chúng ta hiểu rõ 'bản chất vật lý' của bức ảnh thay vì coi nó là một hộp đen. Mục tiêu của nhóm không chỉ là dùng tool có sẵn, mà là xây dựng quy trình từ A đến Z: từ xử lý điểm ảnh thô, rút trích đặc trưng, đến việc tự thu thập dữ liệu và huấn luyện mô hình."
 
-## Slide 4: Image Gradient
+---
 
-- Sobel theo trục x và y.
-- `Gx`, `Gy`.
-- Magnitude: độ mạnh của biên.
-- Orientation: hướng thay đổi cường độ sáng.
+### Slide 3: Tổng quan hệ thống (1 phút)
+**Nội dung hiển thị:**
+* Sơ đồ: Ảnh đầu vào $\rightarrow$ Resize & Grayscale $\rightarrow$ Tính Gradient $\rightarrow$ Trích xuất HOG $\rightarrow$ Đưa qua SVM $\rightarrow$ Hậu xử lý (NMS) $\rightarrow$ Xuất Bounding Box.
 
-Minh họa:
+**Lời thoại thuyết trình:**
+"Hệ thống hoạt động qua một luồng (pipeline) 5 bước. Ảnh hoặc video từ webcam sẽ được thu nhỏ và chuyển sang ảnh xám. Sau đó, đạo hàm không gian được tính để tìm Gradient. Từ Gradient, ta trích xuất HOG – linh hồn của thuật toán. Vector HOG này được đưa cho SVM chấm điểm, cuối cùng thuật toán Non-Maximum Suppression sẽ lọc các khung hình trùng lặp để cho ra kết quả cuối cùng."
 
-- `outputs/gradient_magnitude.jpg`
-- `outputs/gradient_orientation.jpg`
+---
 
-## Slide 5: HOG
+### Slide 4: Cơ sở lý thuyết - Image Gradient (3 phút)
+**Nội dung hiển thị:**
+* Toán tử Sobel $3 \times 3$ (Trục X và Y).
+* Biên độ $M(x,y)$ và Hướng $\theta(x,y)$.
+* Chèn ảnh minh họa: `outputs/gradient_magnitude.jpg` và `outputs/gradient_orientation.jpg`.
 
-- Resize window `64x128`.
-- Cell `8x8`.
-- Block `2x2`.
-- Histogram 9 hướng.
-- Block normalization `L2-Hys`.
+**Lời thoại thuyết trình:**
+"Bước đầu tiên để máy tính 'thấy' hình dáng là tìm biên cạnh. Nhóm sử dụng mặt nạ Sobel nhân tích chập với ảnh. Như thầy và các bạn thấy trên màn hình:
+- Ảnh Magnitude (bên trái) làm nổi bật các đường viền quần áo, cơ thể (do sự thay đổi ánh sáng lớn).
+- Ảnh Orientation (bên phải) biểu diễn góc của các biên đó. Gradient rất quan trọng vì nó không bị ảnh hưởng nhiều khi ta đổi màu áo hay thay đổi độ sáng chung của môi trường."
 
-Minh họa:
+---
 
-- `outputs/hog_visualization.jpg`
+### Slide 5: Cơ sở lý thuyết - Đặc trưng HOG (4 phút)
+**Nội dung hiển thị:**
+* Cửa sổ: $64 \times 128$.
+* Cell: $8 \times 8$ pixel. Block: $2 \times 2$ cells.
+* Histogram: 9 bins (0-180 độ).
+* Chuẩn hóa L2-Hys cục bộ.
+* Chèn ảnh minh họa: `outputs/hog_visualization.jpg`.
 
-## Slide 6: SVM
+**Lời thoại thuyết trình:**
+"Thay vì dùng pixel thô, ta nhóm chúng lại thành các Cell $8 \times 8$ pixel. Tại mỗi cell, ta đếm xem có bao nhiêu pixel hướng theo góc $0^\circ, 20^\circ, 40^\circ \dots$ (tổng cộng 9 hướng). Cứ 4 cells ta gom thành 1 Block và chuẩn hóa L2-Hys để chống nhiễu sáng.
+Kết quả của một ảnh $64 \times 128$ là một vector khổng lồ 3780 chiều. Nhìn vào ảnh minh họa HOG (các đường chéo hình ngôi sao), ta thấy rõ hình bóng của phần đầu, vai và thân người. Đây chính là cách máy tính 'hiểu' hình dáng."
 
-- HOG biến ảnh thành vector đặc trưng.
-- SVM học ranh giới giữa `person` và `background`.
-- Linear SVM có hàm quyết định:
+---
 
-```text
-f(x) = w^T x + b
-```
+### Slide 6: Cơ sở lý thuyết - Thuật toán phân lớp SVM (2 phút)
+**Nội dung hiển thị:**
+* SVM tìm siêu phẳng (Hyperplane) chia cắt không gian 3780 chiều.
+* $f(x) = w^T x + b$.
+* Tối ưu hóa Soft-margin (C=1.0) và cân bằng lớp (Balanced weights).
 
-## Slide 7: Thiết kế chương trình
+**Lời thoại thuyết trình:**
+"Với vector HOG 3780 chiều, bài toán trở thành tìm một mặt phẳng trong không gian 3780 chiều để chia làm 2 phe: Người và Nền. Nhóm sử dụng Linear SVM vì tốc độ phân lớp của hạt nhân tuyến tính cực kỳ nhanh, rất phù hợp cho realtime. Chúng em cũng thiết lập thông số cân bằng lớp (class_weight='balanced') để mô hình không bị thiên lệch dù số lượng ảnh nền thường nhiều hơn ảnh người."
 
-Các module:
+---
 
-- `detector.py`: OpenCV HOG + SVM pretrained.
-- `custom_detector.py`: custom sliding-window detector.
-- `run_realtime.py`: chạy webcam/video bất kỳ.
-- `features.py`: trích xuất HOG.
-- `download_inria_hf_subset.py`: tải subset INRIA.
-- `train_custom_svm.py`: train Linear SVM.
-- `visualize_gradient_hog.py`: xuất ảnh minh họa.
+### Slide 7: Thuật toán Quét cửa sổ trượt - Sliding Window & NMS (3 phút)
+**Nội dung hiển thị:**
+* Khái niệm Kim tự tháp ảnh (Image Pyramid) & Quét cửa sổ.
+* Hiện tượng Overlapping Boxes.
+* Thuật toán Non-Maximum Suppression (NMS) với ngưỡng IoU.
 
-## Slide 8: Dataset
+**Lời thoại thuyết trình:**
+"Do mô hình chỉ nhận kích thước chuẩn, nhóm triển khai kỹ thuật Kim tự tháp ảnh: thu nhỏ ảnh dần dần và dùng cửa sổ quét khắp ảnh (Sliding Window).
+Tuy nhiên, quét như vậy sẽ khiến 1 người bị phát hiện nhiều lần ở các tọa độ hơi lệch nhau. Nhóm đã tự code thuật toán NMS: so sánh diện tích giao nhau (IoU) của các hộp. Hộp nào có độ tin cậy lớn nhất sẽ được giữ lại, các hộp trùng lặp xung quanh bị xóa đi, tạo ra một bounding box duy nhất và gọn gàng nhất."
 
-Dataset hiện tại:
+---
 
-- Nguồn train: INRIA Person mirror trên Hugging Face.
-- Positive: 300 ảnh pedestrian.
-- Negative: 300 negative patches.
-- Video `walking.mp4` chỉ dùng làm demo.
+### Slide 8: Ứng dụng Thực hành - Phần 1: OpenCV Pretrained (1 phút)
+**Nội dung hiển thị:**
+* Chạy realtime trên Webcam/Video bằng thư viện C++ của OpenCV.
+* Tốc độ: Cao (15 - 30 FPS).
+* Lệnh chạy: `python src/run_realtime.py --source 0`
 
-Cách tạo:
+**Lời thoại thuyết trình:**
+"Về mặt triển khai, ứng dụng có thể chạy realtime qua webcam. Nếu dùng bộ Pretrained HOG+SVM của OpenCV, hệ thống đạt tốc độ rất mượt mà. Tuy nhiên, nếu chỉ dùng hàm có sẵn thì chưa phản ánh hết kỹ năng thực hành, do đó nhóm đã tiến tới phần 2."
 
-```bash
-python src/download_inria_hf_subset.py --max-positive 300 --max-negative 300 --negative-patches-per-image 2 --clear-inria --clear-video-bootstrap
-```
+---
 
-## Slide 9: Demo
+### Slide 9: Ứng dụng Thực hành - Phần 2: Tự huấn luyện (Custom SVM) (2 phút)
+**Nội dung hiển thị:**
+* Code tải INRIA Dataset (Hugging Face): 300 Positive, 300 Negative.
+* Kịch bản huấn luyện: StandardScaler + LinearSVC.
+* Kết quả test set: Accuracy 96.67%.
 
-Video bất kỳ:
+**Lời thoại thuyết trình:**
+"Đây là điểm nhấn của dự án. Nhóm viết code tự tải bộ INRIA Dataset chuẩn, tự cắt ảnh nền ngẫu nhiên. Trích xuất 600 vector HOG và tự build Pipeline huấn luyện.
+Kết quả cho thấy mô hình tự train đạt độ chính xác lên tới 96.67% trên tập Test. Mô hình này được lưu lại thành file `.pkl` để sử dụng độc lập."
 
-```bash
-python src/run_realtime.py --source path/to/video.mp4
-```
+---
 
-Webcam:
+### Slide 10: SÁNG TẠO MỞ RỘNG (20%) - Nhận diện khuôn mặt (2 phút)
+**Nội dung hiển thị:**
+* Train mô hình phân loại đối tượng MỚI.
+* Dataset: Labeled Faces in the Wild (LFW).
+* Tái sử dụng HOG và SVM.
+* Lệnh demo: `python src/run_realtime_faces.py --source 0`
 
-```bash
-python src/run_realtime.py --source 0
-```
+**Lời thoại thuyết trình:**
+"Để đáp ứng 20% điểm vận dụng mở rộng sáng tạo, thay vì chỉ nhận diện người đi bộ, nhóm đã chứng minh tính tổng quát của hệ thống bằng cách huấn luyện mô hình nhận diện Khuôn mặt (Face Detection). Nhóm sử dụng bộ dữ liệu khuôn mặt LFW, đưa qua đúng quy trình HOG+SVM đã xây dựng. Kết quả là hệ thống hoàn toàn có thể tìm ra bounding box khuôn mặt trực tiếp trên webcam. Điều này minh chứng hệ thống có thể mở rộng cho Biển báo, Xe cộ, hay bất cứ vật thể nào có hình dáng cố định."
 
-## Slide 10: Custom SVM
+---
 
-Train model:
+### Slide 11: Tổng kết và Trực tiếp Demo (Vòng cuối)
+**Nội dung hiển thị:**
+* Ưu điểm: Hiểu sâu lý thuyết, chạy realtime ổn định, có mô hình tự train.
+* Hạn chế: Thuật toán Sliding Window code bằng Python thuần còn chậm.
+* Hướng phát triển: Kết hợp dò tìm thông minh hơn, đối chiếu với YOLO.
+* (Mở chương trình lên chạy Demo trực tiếp cho Giáo viên xem).
 
-```bash
-python src/train_custom_svm.py
-```
-
-Kết quả train/test:
-
-```text
-Accuracy: 0.9667
-Confusion matrix:
-[[59  1]
- [ 3 57]]
-```
-
-Đánh giá toàn bộ dataset:
-
-```text
-Accuracy: 0.9933
-Confusion matrix:
-[[299   1]
- [  3 297]]
-```
-
-## Slide 11: So sánh pretrained và custom
-
-OpenCV pretrained:
-
-- Nhanh hơn.
-- Ổn định hơn.
-- Phù hợp demo realtime.
-
-Custom SVM:
-
-- Được train từ nguồn ngoài INRIA.
-- Không phụ thuộc video demo cố định.
-- Dễ giải thích về mặt học máy.
-- Chậm hơn vì dùng sliding window.
-
-## Slide 12: Kết quả
-
-- Phát hiện người trên video/webcam.
-- Có bounding box, nhãn và FPS.
-- Có lưu video kết quả.
-- Có ảnh minh họa Gradient và HOG.
-- Có custom model `models/custom_hog_svm.pkl`.
-
-## Slide 13: Hạn chế
-
-- HOG + SVM nhạy với background nhiều cạnh.
-- Khó phát hiện người bị che khuất hoặc quá nhỏ.
-- INRIA subset trong repo chỉ là subset 600 ảnh.
-- Sliding window custom chạy chậm hơn deep learning hoặc detector tối ưu.
-
-## Slide 14: Hướng phát triển
-
-- Tải full INRIA dataset hoặc bổ sung hard negatives.
-- Thêm nhiều video ở bối cảnh khác nhau.
-- Tối ưu sliding window.
-- Thử các mô hình hiện đại như YOLO để so sánh.
-
-## Slide 15: Kết luận
-
-Project đáp ứng yêu cầu Chủ đề 2:
-
-- Có cơ sở lý thuyết Image Gradient, HOG, SVM.
-- Có demo realtime trên video/webcam.
-- Có bounding box và nhãn.
-- Có minh họa các bước trung gian.
-- Có tải dataset ngoài, custom model và kết quả đánh giá.
+**Lời thoại thuyết trình:**
+"Nhìn chung, dự án đã bám sát 100% yêu cầu chuyên môn, giữ vững liêm chính học thuật qua việc tự code các logic lõi và hiểu rõ từng thông số. Dù thuật toán sliding window bằng Python chạy còn hơi chậm so với C++, nhưng nó mang lại giá trị sư phạm cực lớn.
+Xin cảm ơn thầy và các bạn đã lắng nghe. Sau đây nhóm xin phép chạy trực tiếp phần mềm từ Webcam để mọi người cùng xem kết quả!"

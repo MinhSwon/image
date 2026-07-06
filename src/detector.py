@@ -56,7 +56,20 @@ def parse_roi_pct(roi_pct, width, height):
 
 def non_max_suppression_indices(boxes, scores, overlap_thresh=0.35):
     """
-    NMS loại bỏ các bbox trùng nhau.
+    Thuật toán Non-Maximum Suppression (NMS).
+    
+    Cơ sở lý thuyết:
+    Trong quá trình quét cửa sổ trượt (Sliding Window), một đối tượng thường bị
+    phát hiện nhiều lần ở các vị trí và tỷ lệ hơi lệch nhau, dẫn đến nhiều Bounding Box
+    trồng chéo lên cùng một người.
+    NMS giải quyết vấn đề này bằng cách:
+    1. Sắp xếp tất cả các hộp theo điểm tin cậy (score) giảm dần.
+    2. Chọn hộp có điểm cao nhất, đưa vào danh sách giữ lại (keep).
+    3. Tính toán tỷ lệ diện tích giao nhau (Intersection over Union - IoU) giữa hộp 
+       vừa chọn và tất cả các hộp còn lại.
+    4. Nếu IoU > overlap_thresh (ngưỡng cho phép), loại bỏ hộp đó vì nó bị trùng lặp.
+    5. Lặp lại cho đến khi xét hết tất cả các hộp.
+    
     boxes: list[(x, y, w, h)]
     scores: list[float]
     """
@@ -108,8 +121,14 @@ def non_max_suppression_with_scores(boxes, scores, overlap_thresh=0.35):
 
 def remove_inner_boxes(boxes, scores=None, contain_thresh=0.75):
     """
-    Loại bỏ box nhỏ nằm phần lớn bên trong box lớn hơn.
-    Nếu một box nhỏ bị chứa trong box lớn hơn, giữ box lớn.
+    Thuật toán loại bỏ hộp con (Inner Boxes).
+    
+    Cơ sở lý thuyết:
+    Đôi khi NMS không lọc hết được các box nếu có một box rất nhỏ nằm trọn bên trong
+    một box rất lớn (làm cho tỷ lệ IoU tổng thể không vượt quá overlap_thresh).
+    Thuật toán này sẽ kiểm tra: Nếu diện tích phần giao nhau chiếm phần lớn
+    diện tích của box nhỏ (tỷ lệ > contain_thresh), ta sẽ coi box nhỏ đó là nhiễu
+    nằm gọn trong box lớn và loại bỏ nó.
     """
     if len(boxes) == 0:
         return [], []
@@ -161,10 +180,20 @@ def remove_inner_boxes(boxes, scores=None, contain_thresh=0.75):
 
 class HOGSVMPedestrianDetector:
     """
-    Detector HOG + SVM cho người đi bộ.
-
-    OpenCV HOGDescriptor_getDefaultPeopleDetector() là bộ SVM đã huấn luyện sẵn.
-    HOG window mặc định là 64x128, phù hợp với người đứng/đi bộ toàn thân.
+    Lớp đóng gói Bộ phát hiện người đi bộ sử dụng OpenCV HOG + SVM.
+    
+    Cơ sở lý thuyết:
+    OpenCV cung cấp sẵn bộ mô hình `cv2.HOGDescriptor_getDefaultPeopleDetector()`.
+    Đây là mô hình Linear SVM đã được huấn luyện sẵn (Pre-trained) trên tập dữ liệu 
+    gốc MIT/INRIA với cửa sổ chuẩn 64x128. Nó sử dụng thuật toán tối ưu hóa C++ để quét 
+    ảnh cực kỳ nhanh và cực kỳ ổn định.
+    
+    Tham số chính:
+    - hit_threshold: Ngưỡng ra quyết định của SVM. Nếu giảm, phát hiện được nhiều 
+      hơn nhưng dễ bị nhiễu (False Positives).
+    - win_stride: Bước nhảy của cửa sổ trượt (mặc định 8x8 cell).
+    - scale: Tỷ lệ thu phóng ảnh trong kim tự tháp ảnh (Image Pyramid), mặc định 1.05
+      nghĩa là ảnh sẽ nhỏ đi 5% sau mỗi bước thu phóng.
     """
 
     def __init__(

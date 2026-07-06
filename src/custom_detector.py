@@ -16,11 +16,24 @@ from features import extract_hog_feature
 
 class CustomHOGSVMSlidingWindowDetector:
     """
-    Custom HOG + Linear SVM detector trained by train_custom_svm.py.
-
-    This detector is intentionally simple for study/report purposes:
-    it scans 64x128 windows over multiple image scales, classifies each
-    window with the saved sklearn pipeline, then applies NMS.
+    Bộ phát hiện tùy chỉnh sử dụng HOG + Linear SVM (Custom Model).
+    
+    Cơ sở lý thuyết và Thuật toán:
+    Vì mô hình Custom SVM tự huấn luyện chỉ nhận đầu vào cố định là cửa sổ 64x128 pixel, 
+    nhóm đã triển khai giải thuật Quét cửa sổ trượt (Sliding Window) đa tỷ lệ (Multi-scale)
+    bằng Python thuần:
+    
+    1. Kim tự tháp ảnh (Image Pyramid): Ảnh đầu vào được thu nhỏ liên tục qua các tỷ lệ 
+       (scales) khác nhau. Việc thu nhỏ ảnh tương đương với việc phóng to cửa sổ quét, 
+       giúp phát hiện người ở các khoảng cách xa gần khác nhau.
+    2. Cửa sổ trượt (Sliding Window): Tại mỗi tỷ lệ ảnh, một cửa sổ cố định 64x128 
+       trượt khắp ảnh từ trái sang phải, từ trên xuống dưới với bước nhảy `window_step`.
+    3. HOG + SVM: Mỗi vùng ảnh con bị cắt bởi cửa sổ sẽ được tính toán vector HOG, 
+       sau đó đưa qua hàm quyết định `decision_function` của SVM.
+    4. Nếu điểm quyết định (score) lớn hơn `decision_threshold`, hệ thống đánh dấu đó là người.
+    
+    Lưu ý: Giải thuật này viết bằng Python lồng vòng lặp nên chạy khá chậm, nhưng nó 
+    giúp chứng minh toàn vẹn quy trình học máy truyền thống từ xử lý thô đến học máy.
     """
 
     def __init__(

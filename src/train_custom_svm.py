@@ -103,6 +103,28 @@ def main():
         ("svm", LinearSVC(C=1.0, class_weight="balanced", max_iter=20000)),
     ])
 
+    """
+    Huấn luyện mô hình Linear Support Vector Machine (Linear SVM).
+    
+    Cơ sở lý thuyết & Cấu hình Pipeline (Scikit-Learn):
+    1. StandardScaler (Chuẩn hóa Z-score): 
+       - Đặc trưng HOG đôi khi có thang đo (scale) chênh lệch nhỏ dù đã chuẩn hóa L2-Hys cục bộ.
+       - StandardScaler đưa trung bình của từng feature về 0 và độ lệch chuẩn về 1. 
+         Việc này giúp thuật toán tối ưu hóa (gradient descent/quang học) của SVM hội tụ 
+         nhanh hơn và tìm được siêu phẳng (hyperplane) chính xác hơn.
+    
+    2. LinearSVC: 
+       - Sử dụng kernel tuyến tính (Linear kernel) vì với không gian số chiều lớn của HOG 
+         (3780 chiều), dữ liệu thường đã phân tách tuyến tính. Kernel tuyến tính giúp 
+         huấn luyện và dự đoán rất nhanh so với RBF.
+       - C=1.0: Tham số Regularization. Càng nhỏ thì biên (margin) càng lớn nhưng chấp nhận 
+         nhiều điểm phân loại sai (Soft-margin). C=1.0 là giá trị cân bằng chuẩn.
+       - class_weight="balanced": Rất quan trọng! Tập dữ liệu INRIA thường mất cân bằng 
+         (số lượng ảnh nền negative nhiều hơn ảnh người positive). Tham số này tự động điều chỉnh 
+         trọng số phạt (penalty) tỷ lệ nghịch với tần suất xuất hiện của lớp, giúp mô hình không bị 
+         lệch (bias) về phía lớp nền.
+       - max_iter=20000: Tăng số vòng lặp tối đa để đảm bảo mô hình hội tụ trên không gian lớn.
+    """
     print("Training Linear SVM...")
     model.fit(X_train, y_train)
 
