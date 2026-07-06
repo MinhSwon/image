@@ -23,7 +23,8 @@ def main():
 
     # Xử lý input source
     if args.source.isdigit():
-        cap = cv2.VideoCapture(int(args.source))
+        # Dùng CAP_DSHOW để tránh lỗi MSMF (-1072875772) trên Windows Webcam
+        cap = cv2.VideoCapture(int(args.source), cv2.CAP_DSHOW)
     else:
         cap = cv2.VideoCapture(args.source)
 
@@ -47,7 +48,7 @@ def main():
         start_time = time.time()
         
         # Phát hiện khuôn mặt
-        boxes, scores = detector.detect(frame)
+        boxes, scores, _ = detector.detect(frame)
         
         end_time = time.time()
         fps = 1.0 / (end_time - start_time + 1e-5)

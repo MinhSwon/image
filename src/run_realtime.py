@@ -235,8 +235,12 @@ def build_detector(args):
 
 
 def run(args):
-    source = parse_source(args.source)
-    cap = cv2.VideoCapture(source)
+    if args.source.isdigit():
+        source_idx = int(args.source)
+        # Ép dùng DirectShow để tránh lỗi MSMF (-1072875772) trên Windows Webcam
+        cap = cv2.VideoCapture(source_idx, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(args.source)
 
     if not cap.isOpened():
         raise RuntimeError(f"Không mở được source: {args.source}")
