@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 
-from config import NEGATIVE_DIR, WINDOW_SIZE, MODELS_DIR
+from config import NEGATIVE_DIR, WINDOW_SIZE, MODEL_DIR
 from features import extract_hog_feature
 
 def load_face_data():
@@ -114,8 +114,8 @@ def train_face_model():
     print(report)
     
     # 5. Save Model
-    os.makedirs(MODELS_DIR, exist_ok=True)
-    model_path = os.path.join(MODELS_DIR, "custom_hog_svm_face_model.pkl")
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    model_path = os.path.join(MODEL_DIR, "custom_hog_svm_face_model.pkl")
     joblib.dump(model, model_path)
     print(f"Mô hình đã được lưu tại: {model_path}")
 
