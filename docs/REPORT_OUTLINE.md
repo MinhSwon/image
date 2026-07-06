@@ -9,8 +9,8 @@ Mục tiêu:
 - Hiểu Image Gradient, Magnitude và Orientation.
 - Hiểu quy trình tạo đặc trưng HOG.
 - Hiểu vai trò của SVM trong bài toán phân loại person/background.
-- Xây dựng demo chạy realtime trên video/webcam.
-- Tự tạo dataset positive/negative và train thử custom Linear SVM.
+- Xây dựng demo chạy realtime trên video/webcam hoặc video bất kỳ.
+- Tải dataset ngoài từ INRIA/Hugging Face và train custom Linear SVM.
 
 ## 2. Cơ sở lý thuyết
 
@@ -21,13 +21,6 @@ Image Gradient biểu diễn mức thay đổi cường độ sáng của ảnh 
 ```text
 Gx = dI/dx
 Gy = dI/dy
-```
-
-Trong thực nghiệm, project dùng toán tử Sobel:
-
-```text
-Gx = I * Sx
-Gy = I * Sy
 ```
 
 Biên độ gradient:
@@ -46,7 +39,7 @@ Script minh họa: `src/visualize_gradient_hog.py`.
 
 ### 2.2 HOG
 
-HOG, Histogram of Oriented Gradients, mô tả hình dạng đối tượng dựa trên phân bố hướng gradient.
+HOG mô tả hình dạng đối tượng dựa trên phân bố hướng gradient.
 
 Các bước:
 
@@ -57,16 +50,8 @@ Các bước:
 5. Chia ảnh thành các cell `8x8`.
 6. Với mỗi cell, tạo histogram hướng gradient.
 7. Gom nhiều cell thành block `2x2`.
-8. Chuẩn hóa block bằng `L2-Hys` để giảm ảnh hưởng ánh sáng.
+8. Chuẩn hóa block bằng `L2-Hys`.
 9. Ghép các block thành vector đặc trưng HOG.
-
-Thông số trong project:
-
-- Window: `64x128`
-- Orientations: `9`
-- Pixels per cell: `8x8`
-- Cells per block: `2x2`
-- Block norm: `L2-Hys`
 
 ### 2.3 SVM
 
@@ -81,18 +66,16 @@ Với Linear SVM:
 f(x) = w^T x + b
 ```
 
-Nếu `f(x) > 0`, vùng ảnh có xu hướng là người. Nếu `f(x) < 0`, vùng ảnh có xu hướng là nền.
-
 Trong project có hai hướng:
 
 - OpenCV pretrained HOG + SVM: dùng để demo realtime ổn định.
-- Custom HOG + Linear SVM: model tự train từ dataset positive/negative.
+- Custom HOG + Linear SVM: model tự train từ INRIA subset.
 
 ## 3. Thiết kế chương trình
 
 Luồng xử lý demo chính:
 
-1. Đọc frame từ video/webcam bằng `cv2.VideoCapture`.
+1. Đọc frame từ video hoặc webcam bằng `cv2.VideoCapture`.
 2. Resize frame để tăng tốc.
 3. Chọn ROI nếu người dùng truyền `--roi-pct`.
 4. Dùng HOG + SVM để phát hiện người.
@@ -106,26 +89,27 @@ Các file chính:
 
 - `src/detector.py`: detector pretrained OpenCV, NMS, vẽ kết quả.
 - `src/custom_detector.py`: custom sliding-window detector.
-- `src/run_realtime.py`: chạy webcam/video, ghi video.
+- `src/run_realtime.py`: chạy webcam/video bất kỳ, ghi video.
 - `src/features.py`: trích xuất HOG feature.
-- `src/bootstrap_dataset_from_video.py`: tạo dataset từ video.
+- `src/download_inria_hf_subset.py`: tải subset INRIA từ Hugging Face.
+- `src/bootstrap_dataset_from_video.py`: tạo dataset từ video, chỉ giữ như tùy chọn phụ.
 - `src/train_custom_svm.py`: train Linear SVM.
 - `src/evaluate_custom_svm.py`: đánh giá model.
 - `src/visualize_gradient_hog.py`: xuất ảnh Gradient/HOG.
 
 ## 4. Dataset và thí nghiệm
 
-Nguồn dữ liệu:
+Nguồn dữ liệu train:
 
-- Video mẫu: `dataset/videos/walking.mp4`
-- Positive: 80 ảnh crop người từ video mẫu.
-- Negative: 120 ảnh nền không có người.
-- Test images: 5 frame để minh họa Gradient/HOG.
+- Dataset ngoài: INRIA Person mirror trên Hugging Face.
+- Positive: 300 ảnh pedestrian từ `data_ped/pedestrians`.
+- Negative: 300 negative patches crop từ `data_ped/no_pedestrians`.
+- Video mẫu `dataset/videos/walking.mp4` chỉ dùng để demo, không dùng để train model custom.
 
 Cách tạo dataset:
 
 ```bash
-python src/bootstrap_dataset_from_video.py --source dataset/videos/walking.mp4 --clear-generated
+python src/download_inria_hf_subset.py --max-positive 300 --max-negative 300 --negative-patches-per-image 2 --clear-inria --clear-video-bootstrap
 ```
 
 Cách train custom SVM:
@@ -137,28 +121,28 @@ python src/train_custom_svm.py
 Kết quả train/test hiện tại:
 
 ```text
-Accuracy: 0.95
+Accuracy: 0.9667
 
 Confusion matrix:
-[[22  2]
- [ 0 16]]
+[[59  1]
+ [ 3 57]]
 ```
 
 Đánh giá toàn bộ dataset:
 
 ```text
-Accuracy: 0.99
+Accuracy: 0.9933
 
 Confusion matrix:
-[[118   2]
- [  0  80]]
+[[299   1]
+ [  3 297]]
 ```
 
 ## 5. Kết quả
 
 Các kết quả đã có:
 
-- Chương trình phát hiện người trên video/webcam.
+- Chương trình phát hiện người trên video/webcam hoặc video bất kỳ.
 - Bounding box và nhãn được vẽ trực tiếp trên frame.
 - FPS được hiển thị.
 - Có thể lưu video kết quả.
@@ -166,16 +150,16 @@ Các kết quả đã có:
 - Có custom model `models/custom_hog_svm.pkl`.
 - Có report `outputs/custom_svm_report.txt`.
 
-Lệnh demo chính:
+Lệnh demo pretrained:
 
 ```bash
-python src/run_realtime.py --source dataset/videos/walking.mp4
+python src/run_realtime.py --source path/to/video.mp4
 ```
 
 Lệnh demo custom SVM:
 
 ```bash
-python src/run_realtime.py --source dataset/videos/walking.mp4 --model custom --custom-max-width 360 --custom-step 48 --custom-scales 1.0,0.75,0.55,0.40 --custom-threshold 0.8
+python src/run_realtime.py --source path/to/video.mp4 --model custom --custom-max-width 360 --custom-step 48 --custom-scales 1.0,0.75,0.55,0.40 --custom-threshold 0.8
 ```
 
 ## 6. Nhận xét
@@ -184,16 +168,15 @@ python src/run_realtime.py --source dataset/videos/walking.mp4 --model custom --
 
 - Phương pháp dễ giải thích, phù hợp môn Nhập môn Xử lý ảnh số.
 - Không cần GPU.
-- Demo realtime chạy ổn với pretrained detector.
-- Có phần tự train SVM để thể hiện năng lực mở rộng.
+- Demo pretrained chạy ổn với video bất kỳ.
+- Custom SVM đã train từ nguồn ngoài, không phụ thuộc video demo.
 
 Hạn chế:
 
 - HOG + SVM nhạy với góc nhìn, che khuất và nền nhiều cạnh.
-- Custom SVM còn phụ thuộc chất lượng dataset.
-- Dataset bootstrap từ video mẫu chưa đa dạng bằng dataset chuẩn như INRIA Person Dataset.
-- Sliding window custom chậm hơn detector tối ưu sẵn của OpenCV.
+- Custom SVM còn chậm vì sliding window thuần Python.
+- INRIA subset trong project chỉ là subset 600 ảnh để giữ dung lượng vừa phải.
 
 ## 7. Kết luận
 
-Project đáp ứng yêu cầu Chủ đề 2: trình bày được Image Gradient, HOG và SVM; xây dựng được demo phát hiện người đi bộ trên video/webcam; vẽ bounding box và nhãn realtime; đồng thời có phần tự tạo dataset, train custom Linear SVM và đánh giá kết quả.
+Project đáp ứng yêu cầu Chủ đề 2: trình bày được Image Gradient, HOG và SVM; xây dựng được demo phát hiện người đi bộ trên video/webcam; vẽ bounding box và nhãn realtime; đồng thời có phần tải dataset ngoài từ INRIA/Hugging Face, train custom Linear SVM và đánh giá kết quả.

@@ -178,7 +178,7 @@ def add_title_page(doc):
         ("Môn học", "Nhập môn Xử lý ảnh số"),
         ("Ngôn ngữ / thư viện", "Python, OpenCV, scikit-image, scikit-learn"),
         ("Demo chính", "Realtime pedestrian detection trên video/webcam"),
-        ("Model mở rộng", "Custom Linear SVM train từ 80 positive và 120 negative"),
+        ("Model mở rộng", "Custom Linear SVM train từ 300 positive và 300 negative INRIA"),
     ]
     table = doc.add_table(rows=0, cols=2)
     table.style = "Table Grid"
@@ -231,9 +231,10 @@ def add_numbered(doc, items):
 
 def add_dataset_table(doc):
     data = [
-        ("Video đầu vào", "dataset/videos/walking.mp4", "Nguồn demo chính"),
-        ("Positive", "80 ảnh", "Crop người đi bộ từ video mẫu"),
-        ("Negative", "120 ảnh", "Vùng nền ít overlap với người"),
+        ("Nguồn train", "INRIA Person mirror trên Hugging Face", "Dataset ngoài, không lấy từ video demo"),
+        ("Video đầu vào", "dataset/videos/walking.mp4", "Chỉ dùng làm video demo"),
+        ("Positive", "300 ảnh", "Pedestrian từ data_ped/pedestrians"),
+        ("Negative", "300 ảnh", "Negative patches từ data_ped/no_pedestrians"),
         ("Test images", "5 ảnh", "Dùng xuất Gradient/HOG"),
         ("Custom model", "models/custom_hog_svm.pkl", "Linear SVM sau khi train"),
     ]
@@ -256,11 +257,11 @@ def add_dataset_table(doc):
 
 def add_result_table(doc):
     data = [
-        ("Train/Test split", "160 train, 40 test", "Stratified 80/20"),
-        ("Test accuracy", "0.95", "Đánh giá trên tập test"),
-        ("Test confusion matrix", "[[22, 2], [0, 16]]", "2 negative bị nhầm thành person"),
-        ("Full dataset accuracy", "0.99", "Đánh giá lại trên 200 ảnh"),
-        ("Full dataset matrix", "[[118, 2], [0, 80]]", "Không bỏ sót positive trong dataset"),
+        ("Train/Test split", "480 train, 120 test", "Stratified 80/20"),
+        ("Test accuracy", "0.9667", "Đánh giá trên tập test"),
+        ("Test confusion matrix", "[[59, 1], [3, 57]]", "1 negative và 3 positive bị nhầm"),
+        ("Full dataset accuracy", "0.9933", "Đánh giá lại trên 600 ảnh"),
+        ("Full dataset matrix", "[[299, 1], [3, 297]]", "Kết quả trên toàn bộ INRIA subset"),
     ]
     table = doc.add_table(rows=1, cols=3)
     table.style = "Table Grid"
@@ -377,19 +378,20 @@ def build_report():
         "src/custom_detector.py: custom sliding-window detector.",
         "src/run_realtime.py: chạy webcam/video, ghi video.",
         "src/features.py: trích xuất HOG feature.",
-        "src/bootstrap_dataset_from_video.py: tạo dataset từ video mẫu.",
+        "src/download_inria_hf_subset.py: tải subset INRIA từ Hugging Face.",
+        "src/bootstrap_dataset_from_video.py: tạo dataset từ video nếu cần demo nhanh.",
         "src/train_custom_svm.py: train Linear SVM.",
         "src/visualize_gradient_hog.py: xuất ảnh Gradient/HOG.",
     ])
 
     doc.add_heading("4. Dataset và thí nghiệm", level=1)
     doc.add_paragraph(
-        "Dataset được bootstrap từ video mẫu để bài nộp có đủ positive, negative và ảnh test. "
-        "Cách này phù hợp cho demo học thuật; nếu mở rộng nghiêm túc hơn nên bổ sung dữ liệu chuẩn như INRIA Person Dataset."
+        "Dataset train hiện tại được lấy từ nguồn ngoài INRIA Person mirror trên Hugging Face. "
+        "Video mẫu chỉ dùng để demo, không dùng làm nguồn train custom SVM."
     )
     add_dataset_table(doc)
     doc.add_paragraph("Lệnh tạo dataset:")
-    add_code_block(doc, "python src/bootstrap_dataset_from_video.py --source dataset/videos/walking.mp4 --clear-generated")
+    add_code_block(doc, "python src/download_inria_hf_subset.py --max-positive 300 --max-negative 300 --negative-patches-per-image 2 --clear-inria --clear-video-bootstrap")
     doc.add_paragraph("Lệnh train custom SVM:")
     add_code_block(doc, "python src/train_custom_svm.py")
 

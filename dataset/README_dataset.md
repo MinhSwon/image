@@ -6,31 +6,48 @@ Dataset dùng cho Chủ đề 2: HOG + SVM phát hiện người đi bộ.
 
 ```text
 dataset/
-  positive/     ảnh/crop có người đi bộ
-  negative/     ảnh nền không có người
-  test_images/  ảnh dùng minh họa Gradient/HOG
-  videos/       video đầu vào
+  positive/      ảnh pedestrian dùng train SVM
+  negative/      ảnh nền/negative patches dùng train SVM
+  test_images/   ảnh dùng minh họa Gradient/HOG
+  videos/        video đầu vào để demo
+  external_raw/  raw cache tải từ nguồn ngoài, không commit lên Git
 ```
 
-## Dữ liệu hiện có
+## Dữ liệu train hiện tại
 
-- `dataset/videos/walking.mp4`: video mẫu để demo.
-- `dataset/positive/`: 80 ảnh positive được tạo từ video mẫu.
-- `dataset/negative/`: 120 ảnh negative được lấy từ vùng nền ít overlap với người.
-- `dataset/test_images/`: 5 frame dùng để xuất ảnh Gradient/HOG.
+Dataset train hiện tại **không lấy từ video demo**. Project dùng subset từ mirror INRIA Person trên Hugging Face:
 
-## Cách tạo lại dataset
+```text
+https://huggingface.co/datasets/marcelarosalesj/inria-person
+```
+
+Hiện có:
+
+- `dataset/positive/`: 300 ảnh pedestrian từ thư mục `data_ped/pedestrians`.
+- `dataset/negative/`: 300 negative patches crop từ thư mục `data_ped/no_pedestrians`.
+- `dataset/videos/walking.mp4`: chỉ dùng làm video demo.
+- `dataset/test_images/`: ảnh minh họa Gradient/HOG.
+
+## Tạo lại dataset INRIA subset
 
 ```bash
-python src/bootstrap_dataset_from_video.py --source dataset/videos/walking.mp4 --clear-generated
+python src/download_inria_hf_subset.py --max-positive 300 --max-negative 300 --negative-patches-per-image 2 --clear-inria --clear-video-bootstrap
 ```
 
-Script dùng detector HOG + SVM pretrained của OpenCV để bootstrap crop người từ video, sau đó lấy các vùng nền làm negative. Đây là cách tạo dataset nhanh để phục vụ báo cáo và train custom SVM.
+Script sẽ:
 
-Nếu muốn dataset mạnh hơn, nhóm nên tự quay/thêm ảnh:
+1. Liệt kê file từ Hugging Face dataset API.
+2. Tải ảnh pedestrian làm positive.
+3. Tải ảnh no_pedestrians rồi crop ngẫu nhiên các vùng nền tỷ lệ gần 64x128 làm negative.
+4. Xóa các ảnh `auto_*` tạo từ video cũ nếu dùng `--clear-video-bootstrap`.
 
-- Positive: người toàn thân, nhiều khoảng cách, nhiều góc nhìn.
-- Negative: nền đường, tường, cây, xe, hành lang, sân trường nhưng không có người.
+Raw ảnh tải về nằm ở:
+
+```text
+dataset/external_raw/inria_hf/
+```
+
+Thư mục này được `.gitignore` để tránh đẩy dữ liệu thô trùng lặp lên Git.
 
 ## Train custom SVM
 
