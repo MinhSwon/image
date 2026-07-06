@@ -1,0 +1,42 @@
+HUONG DAN CHAY NHANH
+
+1. Cai thu vien:
+python -m pip install -r requirements.txt
+
+2. Demo chinh bang OpenCV HOG + SVM pretrained:
+python src/run_realtime.py --source dataset/videos/walking.mp4
+
+3. Demo webcam:
+python src/run_realtime.py --source 0
+
+4. Luu video ket qua:
+python src/run_realtime.py --source dataset/videos/walking.mp4 --record outputs/result.mp4
+
+5. Chay khong mo cua so, chi ghi video:
+python src/run_realtime.py --source dataset/videos/walking.mp4 --no-display --record outputs/result.mp4
+
+6. Tao dataset positive/negative tu video mau:
+python src/bootstrap_dataset_from_video.py --source dataset/videos/walking.mp4 --clear-generated
+
+7. Train custom HOG + SVM:
+python src/train_custom_svm.py
+
+8. Danh gia custom model:
+python src/evaluate_custom_svm.py
+
+9. Demo custom SVM:
+python src/run_realtime.py --source dataset/videos/walking.mp4 --model custom --custom-max-width 360 --custom-step 48 --custom-scales 1.0,0.75,0.55,0.40 --custom-threshold 0.8
+
+10. Xuat anh Gradient + HOG:
+python src/visualize_gradient_hog.py --image dataset/test_images/test_frame_000.jpg
+
+KET QUA HIEN CO:
+- dataset/positive/: 80 anh
+- dataset/negative/: 120 anh
+- dataset/test_images/: 5 anh
+- models/custom_hog_svm.pkl
+- outputs/custom_svm_report.txt
+- outputs/input_resized.jpg
+- outputs/gradient_magnitude.jpg
+- outputs/gradient_orientation.jpg
+- outputs/hog_visualization.jpg

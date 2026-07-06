@@ -1,0 +1,19 @@
+CUSTOM HOG + SVM TRAINING REPORT
+Positive images: 80
+Negative images: 120
+Train samples: 160
+Test samples: 40
+Accuracy: 0.95
+
+              precision    recall  f1-score   support
+
+  background       1.00      0.92      0.96        24
+      person       0.89      1.00      0.94        16
+
+    accuracy                           0.95        40
+   macro avg       0.94      0.96      0.95        40
+weighted avg       0.96      0.95      0.95        40
+
+Confusion matrix:
+[[22  2]
+ [ 0 16]]

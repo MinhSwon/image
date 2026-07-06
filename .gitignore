@@ -1,0 +1,23 @@
+# Python/runtime cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local/editor noise
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Internal QA previews generated while building slides
+outputs/slide_preview_internal/
+
+# Temporary render folders
+outputs/report_render/
+docs/Slide_HOG_SVM/
+*.inspect.ndjson
