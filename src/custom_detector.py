@@ -46,6 +46,7 @@ class CustomHOGSVMSlidingWindowDetector:
         decision_threshold=0.0,
         nms_thresh=0.35,
         batch_size=128,
+        window_size=WINDOW_SIZE,
     ):
         if not os.path.exists(model_path):
             raise FileNotFoundError(
@@ -62,6 +63,7 @@ class CustomHOGSVMSlidingWindowDetector:
         self.decision_threshold = decision_threshold
         self.nms_thresh = nms_thresh
         self.batch_size = max(1, int(batch_size))
+        self.window_size = window_size
 
     def _flush_batch(self, features, coords, boxes, scores):
         if not features:
@@ -108,7 +110,7 @@ class CustomHOGSVMSlidingWindowDetector:
             roi_frame = work_frame
 
         roi_h, roi_w = roi_frame.shape[:2]
-        win_w, win_h = WINDOW_SIZE
+        win_w, win_h = self.window_size
 
         found_boxes = []
         found_scores = []
@@ -130,7 +132,7 @@ class CustomHOGSVMSlidingWindowDetector:
             for y in range(0, max_y + 1, self.window_step):
                 for x in range(0, max_x + 1, self.window_step):
                     window = scaled[y:y + win_h, x:x + win_w]
-                    feature = extract_hog_feature(window)
+                    feature = extract_hog_feature(window, window_size=self.window_size)
 
                     mapped_x = int(x / scale)
                     mapped_y = int(y / scale)

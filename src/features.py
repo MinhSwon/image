@@ -11,7 +11,7 @@ from config import (
 )
 
 
-def preprocess_for_hog(image):
+def preprocess_for_hog(image, window_size=WINDOW_SIZE):
     """
     Tiền xử lý ảnh trước khi trích xuất đặc trưng HOG.
     
@@ -23,13 +23,13 @@ def preprocess_for_hog(image):
     3. Cân bằng lược đồ xám (Histogram Equalization) để tăng độ tương phản,
        giúp các đường biên trở nên rõ ràng hơn ở cả vùng tối và sáng.
     """
-    image = cv2.resize(image, WINDOW_SIZE)
+    image = cv2.resize(image, window_size)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gray = cv2.equalizeHist(gray)
     return gray
 
 
-def extract_hog_feature(image):
+def extract_hog_feature(image, window_size=WINDOW_SIZE):
     """
     Trích xuất vector đặc trưng HOG (Histogram of Oriented Gradients).
     
@@ -46,7 +46,7 @@ def extract_hog_feature(image):
       
     Kết quả trả về: Vector 1D có kích thước 3780 chiều (đối với ảnh 64x128).
     """
-    gray = preprocess_for_hog(image)
+    gray = preprocess_for_hog(image, window_size=window_size)
 
     feature = hog(
         gray,

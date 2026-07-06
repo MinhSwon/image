@@ -12,9 +12,10 @@ def main():
     try:
         detector = CustomHOGSVMSlidingWindowDetector(
             model_path="models/custom_hog_svm_face_model.pkl",
-            decision_threshold=0.5, # Có thể tinh chỉnh
-            window_step=16,         # Tăng bước nhảy để chạy nhanh hơn trên Realtime
-            scales=[1.0, 0.75, 0.5]
+            decision_threshold=0.5, # Hạ ngưỡng xuống để dễ bắt mặt hơn (vì tường đã bị loại trừ nhờ Train lại)
+            window_step=16,         # Quét dày hơn (16 pixel/bước) để không lọt lưới khuôn mặt
+            scales=[1.25, 1.0, 0.8, 0.6, 0.4, 0.25], # Bổ sung nhiều kích thước từ to đến nhỏ
+            window_size=(64, 64)
         )
     except Exception as e:
         print(f"Lỗi tải mô hình: {e}")
@@ -23,7 +24,6 @@ def main():
 
     # Xử lý input source
     if args.source.isdigit():
-        # Dùng CAP_DSHOW để tránh lỗi MSMF (-1072875772) trên Windows Webcam
         cap = cv2.VideoCapture(int(args.source), cv2.CAP_DSHOW)
     else:
         cap = cv2.VideoCapture(args.source)
@@ -36,30 +36,37 @@ def main():
     
     import time
     
+    frame_count = 0
+    last_boxes = []
+    prev_time = time.time()
+    
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        # Để chạy realtime mượt hơn với Sliding Window (vốn rất nặng),
-        # ta thu nhỏ khung hình xuống một chút
-        frame = cv2.resize(frame, (640, 480))
+        frame = cv2.resize(frame, (480, 360))
+        frame_count += 1
         
-        start_time = time.time()
+        # Cập nhật HOG mỗi 3 frame
+        if frame_count % 3 == 0:
+            boxes, scores, _ = detector.detect(frame)
+            last_boxes = boxes
+        else:
+            boxes = last_boxes
         
-        # Phát hiện khuôn mặt
-        boxes, scores, _ = detector.detect(frame)
-        
-        end_time = time.time()
-        fps = 1.0 / (end_time - start_time + 1e-5)
+        # Tính FPS trung bình để không bị lỗi số ảo
+        now = time.time()
+        elapsed = now - prev_time
+        fps = 1.0 / (elapsed + 1e-5)
+        prev_time = now
 
         # Vẽ Bounding box
         for (x, y, w, h) in boxes:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
             cv2.putText(frame, "Face", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
-        # Hiển thị FPS
-        cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+        cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         cv2.imshow("Custom HOG+SVM Face Detection", frame)
 

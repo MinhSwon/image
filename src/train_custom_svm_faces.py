@@ -18,8 +18,8 @@ def load_face_data():
     Tải dữ liệu khuôn mặt từ LFW (Labeled Faces in the Wild) làm Positive samples.
     """
     print("Đang tải dữ liệu khuôn mặt LFW (Positive samples)...")
-    # Lấy các khuôn mặt, resize=0.4 để ảnh nhỏ lại cho nhanh
-    lfw_people = fetch_lfw_people(min_faces_per_person=20, resize=0.4, data_home="dataset/external_raw")
+    # Để nguyên độ phân giải gốc (resize=1.0) để HOG bắt được các đường nét sắc sảo trên mặt
+    lfw_people = fetch_lfw_people(min_faces_per_person=20, resize=1.0, data_home="dataset/external_raw")
     images = lfw_people.images
     
     features = []
@@ -27,31 +27,43 @@ def load_face_data():
     
     print(f"Bắt đầu trích xuất HOG từ {len(images)} ảnh khuôn mặt...")
     for img in images:
-        # LFW images là ảnh xám float32 từ 0-1, ta chuyển về uint8 0-255
         img_uint8 = (img * 255).astype(np.uint8)
-        # Chuyển sang BGR 3 kênh để tương thích với hàm preprocess_for_hog
         img_bgr = cv2.cvtColor(img_uint8, cv2.COLOR_GRAY2BGR)
-        # Extract
         try:
-            feat = extract_hog_feature(img_bgr)
+            feat = extract_hog_feature(img_bgr, window_size=(64, 64))
             features.append(feat)
-            labels.append(1) # Lớp 1: Khuôn mặt
+            labels.append(1)
         except Exception as e:
             pass
             
     return features, labels
 
-def load_negative_data(max_samples=2000):
+def load_negative_data(max_samples=5000):
     """
-    Tải ảnh nền từ INRIA làm Negative samples.
+    Tải ảnh nền từ INRIA làm Negative samples, cộng thêm các ảnh trống (màu trơn) 
+    để chống nhận diện sai các bức tường.
     """
-    print("Đang tải dữ liệu ảnh nền INRIA (Negative samples)...")
+    print("Đang tải dữ liệu ảnh nền INRIA và tạo ảnh trống (Negative samples)...")
     neg_paths = glob.glob(os.path.join(NEGATIVE_DIR, "*.jpg")) + glob.glob(os.path.join(NEGATIVE_DIR, "*.png"))
     
     features = []
     labels = []
     
-    count = 0
+    # 1. Thêm khoảng 500 ảnh trống (Solid colors) để chữa bệnh "nhận diện tường thành mặt"
+    print("Đang tạo các mẫu nền trống (Tường trắng, đen, xám)...")
+    for _ in range(500):
+        color = np.random.randint(0, 256)
+        blank_img = np.full((64, 64, 3), color, dtype=np.uint8)
+        try:
+            feat = extract_hog_feature(blank_img, window_size=(64, 64))
+            features.append(feat)
+            labels.append(0)
+        except:
+            pass
+
+    # 2. Lấy nhiều crop ngẫu nhiên từ ảnh INRIA
+    count = len(features)
+    print("Đang cắt ngẫu nhiên từ ảnh phong cảnh...")
     for path in neg_paths:
         if count >= max_samples:
             break
@@ -59,20 +71,25 @@ def load_negative_data(max_samples=2000):
         if img is None:
             continue
             
-        # Với ảnh nền, ta cắt ngẫu nhiên 1 vùng 64x128 để extract HOG
         h, w = img.shape[:2]
-        if h > WINDOW_SIZE[1] and w > WINDOW_SIZE[0]:
-            y = np.random.randint(0, h - WINDOW_SIZE[1])
-            x = np.random.randint(0, w - WINDOW_SIZE[0])
-            crop = img[y:y+WINDOW_SIZE[1], x:x+WINDOW_SIZE[0]]
-            
-            try:
-                feat = extract_hog_feature(crop)
-                features.append(feat)
-                labels.append(0) # Lớp 0: Nền
-                count += 1
-            except:
-                pass
+        win_w, win_h = 64, 64
+        
+        # Cắt 5 vùng ngẫu nhiên cho mỗi ảnh phong cảnh để làm phong phú dữ liệu
+        for _ in range(5):
+            if count >= max_samples:
+                break
+            if h > win_h and w > win_w:
+                y = np.random.randint(0, h - win_h)
+                x = np.random.randint(0, w - win_w)
+                crop = img[y:y+win_h, x:x+win_w]
+                
+                try:
+                    feat = extract_hog_feature(crop, window_size=(64, 64))
+                    features.append(feat)
+                    labels.append(0)
+                    count += 1
+                except:
+                    pass
                 
     return features, labels
 
